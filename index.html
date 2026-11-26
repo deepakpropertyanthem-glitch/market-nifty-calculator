@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="description" content="Market — offline-ready NIFTY trading and options calculator.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Market — NIFTY Trading Calculator</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.15);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.15);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.15);
+    --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 16px;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #38bdf8;
+  }
+  header p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    color: #e2e8f0;
+    border-bottom: 1px solid var(--card-border);
+    padding-bottom: 8px;
+  }
+  .input-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+  }
+  .field label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .field input {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #38bdf8;
+  }
+  .field.highlight input {
+    border-color: var(--amber);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  button {
+    background: var(--blue);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 1;
+  }
+  button:hover { opacity: 0.9; }
+  button.secondary {
+    background: #334155;
+    flex: 0.4;
+  }
+
+  /* Decision Banner */
+  .decision-box {
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 2px solid var(--card-border);
+    text-align: center;
+  }
+  .decision-box.bullish {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+  .decision-box.bearish {
+    background: var(--red-bg);
+    border-color: var(--red);
+  }
+  .decision-box.neutral {
+    background: var(--amber-bg);
+    border-color: var(--amber);
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .bullish .badge { background: var(--green); color: #052e16; }
+  .bearish .badge { background: var(--red); color: #fff; }
+  .neutral .badge { background: var(--amber); color: #451a03; }
+  .decision-reason {
+    font-size: 0.95rem;
+    color: #f1f5f9;
+    margin: 4px 0 0;
+  }
+
+  /* Tables & Metrics */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+  }
+  th { color: var(--muted); font-weight: 600; }
+  td.val { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .res { color: #f87171; }
+  .sup { color: #34d399; }
+  .piv { color: #38bdf8; }
+
+  .stat-tile {
+    background: #0f172a;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-tile .lbl { font-size: 0.75rem; color: var(--muted); }
+  .stat-tile .num { font-size: 1.1rem; font-weight: 800; margin-top: 2px; color: #f8fafc; }
+
+  .trade-plan {
+    background: #0f172a;
+    border-left: 4px solid #38bdf8;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+  .trade-plan p { margin: 4px 0; font-size: 0.9rem; }
+  .install-wrap {display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;color:var(--muted);font-size:.78rem}
+  .install-btn {max-width:240px;flex:initial;background:#0ea5e9;padding:10px 16px}
+  .disclaimer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📊 MARKET — NIFTY MASTER CALCULATOR</h1>
+    <p>CPR • 5-Day Trend/Chop • Gann Square of 9 • India VIX Range • Black-Scholes Estimate</p>
+    <p style="font-size:.78rem;color:#94a3b8">Manual market inputs • No live exchange feed or order placement</p>
+  </header>
+  <div class="install-wrap"><button id="installBtn" class="install-btn" hidden>＋ Install Market App</button><span id="installHint">Use your browser menu → Add to Home Screen to install.</span></div>
+
+  <!-- INPUT SECTION -->
+  <div class="card">
+    <h2>1. Market Inputs (Pre-Market & 9:15 AM Open)</h2>
+    <div class="input-group">
+      <div class="field">
+        <label>5-Day Avg High</label>
+        <input type="number" id="avgHigh" step="0.05" value="25641.58" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>5-Day Avg Low</label>
+        <input type="number" id="avgLow" step="0.05" value="25240.59" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Prev Day High</label>
+        <input type="number" id="prevHigh" step="0.05" value="25992.60" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Prev Day Low</label>
+        <input type="number" id="prevLow" step="0.05" value="25343.85" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Prev Day Close</label>
+        <input type="number" id="prevClose" step="0.05" value="25349.65" oninput="calculateAll()">
+      </div>
+      <div class="field highlight">
+        <label>Today's Open (9:15 AM)</label>
+        <input type="number" id="todayOpen" step="0.05" value="25349.65" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>India VIX (%)</label>
+        <input type="number" id="vix" step="0.01" value="17.70" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Days to Expiry (DTE)</label>
+        <input type="number" id="dte" step="1" min="1" max="30" value="3" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Total Capital (₹)</label>
+        <input type="number" id="capital" step="1000" value="100000" oninput="calculateAll()">
+      </div>
+      <div class="field">
+        <label>Risk Per Trade (%)</label>
+        <input type="number" id="riskPct" step="0.5" value="2" oninput="calculateAll()">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button onclick="calculateAll()">⚡ Calculate & Update Signal</button>
+      <button class="secondary" onclick="syncOpenToClose()">Set Open = Previous Close</button>
+    </div>
+  </div>
+
+  <!-- AUTOMATED DECISION ENGINE -->
+  <div id="decisionBox" class="decision-box neutral">
+    <div id="decisionBadge" class="badge">CALCULATING…</div>
+    <div id="gapStatus" style="font-weight:700; font-size:0.9rem; margin-bottom:4px;"></div>
+    <p id="decisionReason" class="decision-reason"></p>
+  </div>
+
+  <!-- OPTION RECOMMENDATION & FAIR VALUE -->
+  <div class="card">
+    <h2>2. Option Strike, Fair Value (Black-Scholes) & Trade Plan</h2>
+    <div class="grid-3">
+      <div class="stat-tile">
+        <div class="lbl">Suggested Strike (ITM)</div>
+        <div class="num" id="recStrike" style="color:#38bdf8;">-</div>
+      </div>
+      <div class="stat-tile">
+        <div class="lbl">Option Fair Value</div>
+        <div class="num" id="fairValue" style="color:#10b981;">-</div>
+      </div>
+      <div class="stat-tile">
+        <div class="lbl">Suggested Quantity (Lot size assumption: 75)</div>
+        <div class="num" id="lotSize">-</div>
+      </div>
+    </div>
+    <div class="trade-plan" id="tradePlanBox">
+      <p><strong>📍 Spot Entry Trigger:</strong> <span id="spotEntry">-</span></p>
+      <p><strong>🛑 Spot Stop-Loss (SL):</strong> <span id="spotSL">-</span> | <strong>Estimated Option SL:</strong> <span id="optSL">-</span></p>
+      <p><strong>🎯 Target 1 (70% book):</strong> <span id="spotT1">-</span> | <strong>Target 2 (trail):</strong> <span id="spotT2">-</span></p>
+    </div>
+  </div>
+
+  <!-- DETAILED LEVELS GRID -->
+  <div class="grid-2">
+    <!-- GANN LEVELS -->
+    <div class="card">
+      <h2>3. Gann Square of 9 Levels (Base: Previous Close)</h2>
+      <table>
+        <thead>
+          <tr><th>Gann Angle</th><th>Role</th><th style="text-align:right;">Level</th></tr>
+        </thead>
+        <tbody id="gannTable"></tbody>
+      </table>
+    </div>
+
+    <!-- CPR, TREND/CHOP & VIX -->
+    <div class="card">
+      <h2>4. CPR, Trend/Chop Limits & VIX Range</h2>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Description / Status</th><th style="text-align:right;">Value</th></tr>
+        </thead>
+        <tbody id="cprTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="disclaimer">Educational and technical calculator only. Signals and option values are estimates, not trading advice. Confirm live prices, contract specifications and chart conditions; options trading involves substantial risk.</p>
+</div>
+
+<script>
+function normCDF(x) {
+  var t = 1 / (1 + 0.2316419 * Math.abs(x));
+  var d = 0.3989423 * Math.exp(-x * x / 2);
+  var prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  if (x > 0) prob = 1 - prob;
+  return prob;
+}
+
+function blackScholes(S, K, T, r, sigma, type) {
+  if (T <= 0) T = 0.001;
+  var d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+  var d2 = d1 - sigma * Math.sqrt(T);
+  if (type === "CE") {
+    return S * normCDF(d1) - K * Math.exp(-r * T) * normCDF(d2);
+  } else {
+    return K * Math.exp(-r * T) * normCDF(-d2) - S * normCDF(-d1);
+  }
+}
+
+function syncOpenToClose() {
+  document.getElementById('todayOpen').value = document.getElementById('prevClose').value;
+  calculateAll();
+}
+
+function calculateAll() {
+  const avgH = parseFloat(document.getElementById('avgHigh').value) || 0;
+  const avgL = parseFloat(document.getElementById('avgLow').value) || 0;
+  const pH = parseFloat(document.getElementById('prevHigh').value) || 0;
+  const pL = parseFloat(document.getElementById('prevLow').value) || 0;
+  const pC = parseFloat(document.getElementById('prevClose').value) || 0;
+  const tOpen = parseFloat(document.getElementById('todayOpen').value) || pC;
+  const vix = parseFloat(document.getElementById('vix').value) || 15;
+  const dte = parseFloat(document.getElementById('dte').value) || 3;
+  const capital = parseFloat(document.getElementById('capital').value) || 100000;
+  const riskPct = parseFloat(document.getElementById('riskPct').value) || 2;
+
+  if (!pH || !pL || !pC) return;
+
+  // 1. 5-Day ATR & Mid Range
+  const atr = avgH - avgL;
+  const midRange = (avgH + avgL) / 2;
+
+  // 2. CPR & Pivot
+  const pp = (pH + pL + pC) / 3;
+  const bc = (pH + pL) / 2;
+  const tc = (pp - bc) + pp;
+  const cprTop = Math.max(tc, bc);
+  const cprBot = Math.min(tc, bc);
+  const cprWidth = Math.abs(tc - bc);
+  const cprWidthPct = (cprWidth / pp) * 100;
+
+  // 3. Trend / Chop Limit
+  const dis = Math.abs(midRange - pp);
+  const chopLimit = atr * 0.20;
+  const trendLimit = atr * 0.50;
+
+  let regime = "Normal / Mixed";
+  if (dis < chopLimit) regime = "Chop / Sideways";
+  else if (dis > trendLimit) regime = "Strong Trending";
+
+  // 4. VIX 1-Day Expected Move
+  const vixMove = (pC * vix) / 1587.5;
+  const vixUpper = pC + vixMove;
+  const vixLower = pC - vixMove;
+
+  // 5. Gann Square of 9 Levels
+  const root = Math.sqrt(pC);
+  const g180_up = Math.pow(root + 1.00, 2);
+  const g135_up = Math.pow(root + 0.75, 2);
+  const g90_up  = Math.pow(root + 0.50, 2);
+  const g45_up  = Math.pow(root + 0.25, 2);
+  const g45_dn  = Math.pow(root - 0.25, 2);
+  const g90_dn  = Math.pow(root - 0.50, 2);
+  const g135_dn = Math.pow(root - 0.75, 2);
+  const g180_dn = Math.pow(root - 1.00, 2);
+
+  // Render Gann Table
+  document.getElementById('gannTable').innerHTML = `
+    <tr><td>+180° (R4)</td><td>Extreme bullish target</td><td class="val res">${g180_up.toFixed(2)}</td></tr>
+    <tr><td>+135° (R3)</td><td>Upper extreme / reversal</td><td class="val res">${g135_up.toFixed(2)}</td></tr>
+    <tr><td>+90° (R2)</td><td>Major intraday resistance</td><td class="val res">${g90_up.toFixed(2)}</td></tr>
+    <tr><td>+45° (R1)</td><td>Bullish breakout trigger</td><td class="val res">${g45_up.toFixed(2)}</td></tr>
+    <tr><td><strong>Base (0°)</strong></td><td>Previous close (base)</td><td class="val piv">${pC.toFixed(2)}</td></tr>
+    <tr><td>-45° (S1)</td><td>Bearish breakdown trigger</td><td class="val sup">${g45_dn.toFixed(2)}</td></tr>
+    <tr><td>-90° (S2)</td><td>Major intraday support</td><td class="val sup">${g90_dn.toFixed(2)}</td></tr>
+    <tr><td>-135° (S3)</td><td>Lower extreme / reversal</td><td class="val sup">${g135_dn.toFixed(2)}</td></tr>
+    <tr><td>-180° (S4)</td><td>Extreme bearish target</td><td class="val sup">${g180_dn.toFixed(2)}</td></tr>
+  `;
+
+  // Render CPR & Trend Table
+  document.getElementById('cprTable').innerHTML = `
+    <tr><td>Pivot Point (PP)</td><td>Central pivot point</td><td class="val piv">${pp.toFixed(2)}</td></tr>
+    <tr><td>CPR Range (TC - BC)</td><td>${cprWidthPct < 0.25 ? 'Narrow (Trending)' : (cprWidthPct > 0.50 ? 'Wide (Sideways)' : 'Medium')} (${cprWidthPct.toFixed(2)}%)</td><td class="val">${cprBot.toFixed(2)} – ${cprTop.toFixed(2)}</td></tr>
+    <tr><td>5-Day Mid Range</td><td>5-day average midpoint</td><td class="val">${midRange.toFixed(2)}</td></tr>
+    <tr><td>Dis vs Limits</td><td>${regime}</td><td class="val">${dis.toFixed(2)} (Chop: ${chopLimit.toFixed(1)} | Trend: ${trendLimit.toFixed(1)})</td></tr>
+    <tr><td>5-Day ATR</td><td>Average daily range</td><td class="val">${atr.toFixed(2)} points</td></tr>
+    <tr><td>VIX 1-Day Range</td><td>±${vixMove.toFixed(1)} points (68% estimate)</td><td class="val">${vixLower.toFixed(0)} – ${vixUpper.toFixed(0)}</td></tr>
+  `;
+
+  // 6. AUTOMATED JUDGMENT ENGINE (CE vs PE vs NO TRADE)
+  const gap = tOpen - pC;
+  let gapText = `Flat opening (${gap >= 0 ? '+' : ''}${gap.toFixed(1)} points)`;
+  if (gap > 60) gapText = `Gap-up opening (+${gap.toFixed(1)} points)`;
+  else if (gap < -60) gapText = `Gap-down opening (${gap.toFixed(1)} points)`;
+  document.getElementById('gapStatus').innerText = "Opening status: " + gapText;
+
+  let signal = "WAIT"; // CE, PE, WAIT
+  let badgeText = "⚠️ NO TRADE / WAIT (Chop or trap alert)";
+  let reason = "";
+  let boxClass = "neutral";
+
+  // Check extreme gap trap first
+  if (tOpen >= g90_up || tOpen >= vixUpper) {
+    signal = "WAIT";
+    badgeText = "⏳ GAP-UP TRAP — Do not buy immediately (wait for retest)";
+    reason = `Market has already opened near Gann +90° (${g90_up.toFixed(0)}) with a large gap-up. Wait for the first 15 minutes; if price holds above ${g90_up.toFixed(0)} then consider CE only after confirmation; otherwise profit booking may occur.`;
+  } else if (tOpen <= g90_dn || tOpen <= vixLower) {
+    signal = "WAIT";
+    badgeText = "⏳ GAP-DOWN TRAP — Do not buy PE immediately (wait for retest)";
+    reason = `Market has already opened near Gann -90° (${g90_dn.toFixed(0)}) with a large gap-down. Wait for the first 15 minutes; if price breaks below ${g90_dn.toFixed(0)} then consider PE only after confirmation; otherwise short-covering may occur.`;
+  } else if (tOpen >= cprBot && tOpen <= cprTop) {
+    signal = "WAIT";
+    badgeText = "🛑 NO-TRADE ZONE (Price is inside CPR)";
+    reason = `Opening is inside the CPR zone (${cprBot.toFixed(0)} – ${cprTop.toFixed(0)}). Avoid trading until a 15-minute candle closes above ${cprTop.toFixed(0)} or below ${cprBot.toFixed(0)}; wait for confirmation.`;
+  } else if (regime === "Chop / Sideways" && cprWidthPct > 0.50) {
+    signal = "WAIT";
+    badgeText = "⚖️ CHOP / SIDEWAYS MARKET — Avoid chasing breakouts";
+    reason = `Distance (${dis.toFixed(1)}) is below the Chop Limit (${chopLimit.toFixed(1)}) and CPR is wide. Avoid buying options in the middle; watch for reversals near Gann ±90° (${g90_dn.toFixed(0)} / ${g90_up.toFixed(0)}) levels.`;
+  } else if (tOpen > cprTop && tOpen > midRange) {
+    signal = "CE";
+    badgeText = "🟢 BUY CE (Bullish trend signal)";
+    reason = `Price is above CPR (${cprTop.toFixed(0)}) and the 5-day midpoint (${midRange.toFixed(0)}). Consider CE only after holding above Gann +45° (${g45_up.toFixed(0)}) with confirmation.`;
+    boxClass = "bullish";
+  } else if (tOpen < cprBot && tOpen < midRange) {
+    signal = "PE";
+    badgeText = "🔴 BUY PE (Bearish trend signal)";
+    reason = `Price is below CPR (${cprBot.toFixed(0)}) and the 5-day midpoint (${midRange.toFixed(0)}). Consider PE only after a confirmed break below Gann -45° (${g45_dn.toFixed(0)}).`;
+    boxClass = "bearish";
+  } else if (tOpen < cprBot && tOpen >= midRange) {
+    signal = "PE";
+    badgeText = "🟠 CAUTIOUS BUY PE (Bearish pressure; mid-range support nearby)";
+    reason = `Price is below CPR (${cprBot.toFixed(0)}), but the 5-day midpoint (${midRange.toFixed(0)}) is nearby. Wait for a break of the midpoint and Gann -45° (${g45_dn.toFixed(0)}) before considering PE.`;
+    boxClass = "bearish";
+  } else {
+    signal = "CE";
+    badgeText = "🟡 CAUTIOUS BUY CE (Bullish bias; CPR resistance overhead)";
+    reason = `Price is above the midpoint (${midRange.toFixed(0)}), but CPR (${cprTop.toFixed(0)}) may act as resistance. Consider CE only after a confirmed move above ${cprTop.toFixed(0)}.`;
+    boxClass = "bullish";
+  }
+
+  const box = document.getElementById('decisionBox');
+  box.className = "decision-box " + boxClass;
+  document.getElementById('decisionBadge').innerText = badgeText;
+  document.getElementById('decisionReason').innerText = reason;
+
+  // 7. Option Strike, Black-Scholes Fair Value & Position Sizing
+  const T = dte / 365.0;
+  const r = 0.07; // 7% risk-free rate
+  const sigma = vix / 100.0;
+  const atmStrike = Math.round(tOpen / 50) * 50;
+  const riskAmount = capital * (riskPct / 100);
+  const lotMultiplier = 75; // NIFTY Lot size
+
+  if (signal === "CE") {
+    const itmStrike = atmStrike - 100; // 100 pts ITM Call
+    const fv = blackScholes(tOpen, itmStrike, T, r, sigma, "CE");
+    const entryLvl = Math.max(g45_up, tOpen);
+    const slLvl = entryLvl - 35;
+    const estOptSLPoints = 22; // ~0.62 delta * 35 spot pts
+    const optSLPrice = Math.max(5, fv - estOptSLPoints);
+    const maxLots = Math.max(1, Math.floor(riskAmount / (estOptSLPoints * lotMultiplier)));
+
+    document.getElementById('recStrike').innerText = `${itmStrike} CE (ITM)`;
+    document.getElementById('fairValue').innerText = `₹${fv.toFixed(2)}`;
+    document.getElementById('lotSize').innerText = `${maxLots} Lot (${maxLots * lotMultiplier} Qty)`;
+    document.getElementById('spotEntry').innerText = `${entryLvl.toFixed(2)} above on a 15-min close / retest`;
+    document.getElementById('spotSL').innerText = `${slLvl.toFixed(2)} (-35 points)`;
+    document.getElementById('optSL').innerText = `₹${optSLPrice.toFixed(1)} (-22 points)`;
+    document.getElementById('spotT1').innerText = `${g90_up.toFixed(2)} (Gann +90°)`;
+    document.getElementById('spotT2').innerText = `${g135_up.toFixed(2)} (Gann +135°)`;
+
+  } else if (signal === "PE") {
+    const itmStrike = atmStrike + 100; // 100 pts ITM Put
+    const fv = blackScholes(tOpen, itmStrike, T, r, sigma, "PE");
+    const entryLvl = Math.min(g45_dn, tOpen);
+    const slLvl = entryLvl + 35;
+    const estOptSLPoints = 22;
+    const optSLPrice = Math.max(5, fv - estOptSLPoints);
+    const maxLots = Math.max(1, Math.floor(riskAmount / (estOptSLPoints * lotMultiplier)));
+
+    document.getElementById('recStrike').innerText = `${itmStrike} PE (ITM)`;
+    document.getElementById('fairValue').innerText = `₹${fv.toFixed(2)}`;
+    document.getElementById('lotSize').innerText = `${maxLots} Lot (${maxLots * lotMultiplier} Qty)`;
+    document.getElementById('spotEntry').innerText = `${entryLvl.toFixed(2)} below on a 15-min close / retest`;
+    document.getElementById('spotSL').innerText = `${slLvl.toFixed(2)} (+35 points)`;
+    document.getElementById('optSL').innerText = `₹${optSLPrice.toFixed(1)} (-22 points)`;
+    document.getElementById('spotT1').innerText = `${g90_dn.toFixed(2)} (Gann -90°)`;
+    document.getElementById('spotT2').innerText = `${g135_dn.toFixed(2)} (Gann -135°)`;
+
+  } else {
+    const ceStrike = atmStrike - 100;
+    const peStrike = atmStrike + 100;
+    const fvCE = blackScholes(tOpen, ceStrike, T, r, sigma, "CE");
+    const fvPE = blackScholes(tOpen, peStrike, T, r, sigma, "PE");
+
+    document.getElementById('recStrike').innerText = `WAIT`;
+    document.getElementById('fairValue').innerText = `CE: ₹${fvCE.toFixed(1)} | PE: ₹${fvPE.toFixed(1)}`;
+    document.getElementById('lotSize').innerText = `0 Lot (No Trade)`;
+    document.getElementById('spotEntry').innerText = `Breakout: above ${Math.max(cprTop, g45_up).toFixed(0)} (CE) or below ${Math.min(cprBot, g45_dn).toFixed(0)} (PE)`;
+    document.getElementById('spotSL').innerText = `Reversal zones: ${g90_dn.toFixed(0)} / ${g90_up.toFixed(0)}`;
+    document.getElementById('optSL').innerText = `-`;
+    document.getElementById('spotT1').innerText = `${pp.toFixed(0)} (Pivot)`;
+    document.getElementById('spotT2').innerText = `${g90_up.toFixed(0)} / ${g90_dn.toFixed(0)}`;
+  }
+}
+
+window.onload = calculateAll;
+</script>
+<script>
+let marketInstallPrompt;
+const installBtn=document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();marketInstallPrompt=e;installBtn.hidden=false;document.getElementById('installHint').textContent='Install this app on your device.';});
+installBtn.addEventListener('click',async()=>{if(!marketInstallPrompt)return;marketInstallPrompt.prompt();await marketInstallPrompt.userChoice;marketInstallPrompt=null;installBtn.hidden=true;});
+window.addEventListener('appinstalled',()=>{installBtn.hidden=true;document.getElementById('installHint').textContent='Market is installed.';});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
